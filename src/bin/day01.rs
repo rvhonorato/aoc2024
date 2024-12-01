@@ -1,10 +1,13 @@
 // https://adventofcode.com/2024/day/1
 //
+// Part 1
 // - load the input file in two vectors
 // - sort
 // - pair and loop to find the distance between the numbers
 // - sum the distances
-//
+// Part 2
+// - count how many times each element in A appears in B
+// - calculate simmiliarity by multipying sum(A.element * count)
 
 use core::panic;
 use std::{fs::File, io::Read, path::Path};
@@ -50,4 +53,17 @@ fn main() {
     let sum: i32 = results.iter().sum();
 
     println!("Sum: {:?}", sum);
+
+    // count how many times each element of A appears in B
+    let sim: Vec<i32> = list_a
+        .iter()
+        .map(|x| {
+            let count = list_b.iter().filter(|y| x == *y).count() as i32;
+            x * count
+        })
+        .collect();
+
+    let sim_sum: i32 = sim.iter().sum();
+
+    println!("Sim sum: {:?}", sim_sum)
 }
