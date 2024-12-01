@@ -43,11 +43,11 @@ fn main() {
     list_b.sort();
 
     // pair and calculate distance
-    let mut results: Vec<i32> = vec![];
-    list_a
+    let results: Vec<i32> = list_a
         .iter()
         .zip(list_b.iter())
-        .for_each(|(a, b)| results.push((a - b).abs()));
+        .map(|(a, b)| (a - b).abs())
+        .collect();
 
     // sum
     let sum: i32 = results.iter().sum();
