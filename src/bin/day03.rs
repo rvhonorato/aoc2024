@@ -53,8 +53,8 @@ fn main() {
     // Part 1
     let mut result: Vec<i32> = vec![];
     for (_, [n]) in mul_re.captures_iter(&input).map(|c| c.extract()) {
-        let r: Vec<i32> = n.split(',').map(|v| v.parse::<i32>().unwrap()).collect();
-        result.push(r[0] * r[1])
+        let mul = do_multiplications(n);
+        result.push(mul)
     }
 
     let sum: i32 = result.iter().sum();
