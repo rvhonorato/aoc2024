@@ -5,8 +5,6 @@ edition = "2021"
 
 [dependencies]
 regex = "1.11"
-itertools = "0.13.0"
-rayon = "1.10.0"
 
 [lib]
 name = "aoc2024"
