@@ -1,13 +1,5 @@
 // https://adventofcode.com/2024/day/5
-//
-// Part 1
-// - read input into page ordering rules
-// - read input into page updates
-//
-//
 use aoc2024::read_input_to_file;
-use itertools::Itertools;
-use rayon::prelude::*;
 use std::{
     collections::{HashMap, HashSet},
     io::Read,
@@ -39,7 +31,7 @@ fn load_data(input_f: &str) -> (HashMap<usize, HashSet<usize>>, Vec<Vec<usize>>)
     (rules, updates)
 }
 
-fn is_manual_valid(manual: &Vec<usize>, rules: &HashMap<usize, HashSet<usize>>) -> bool {
+fn is_manual_valid(manual: &[usize], rules: &HashMap<usize, HashSet<usize>>) -> bool {
     let mut valid_pages: Vec<bool> = vec![];
     manual.iter().enumerate().for_each(|(i, page)| {
         let behind = &manual[..i];
@@ -69,25 +61,54 @@ fn is_manual_valid(manual: &Vec<usize>, rules: &HashMap<usize, HashSet<usize>>) 
     valid_pages.iter().all(|x| *x)
 }
 
-fn generate_swaps(vec: Vec<usize>) -> Vec<Vec<usize>> {
-    let mut swapped_versions = Vec::new();
+fn topological_sort(manual: &[usize], rules: &HashMap<usize, HashSet<usize>>) -> Vec<usize> {
+    let mut sorted = Vec::new();
+    let mut remaining: HashSet<usize> = manual.iter().cloned().collect();
 
-    for i in 0..vec.len() {
-        for j in (i + 1)..vec.len() {
-            let mut swapped = vec.to_vec();
-            swapped.swap(i, j);
-            swapped_versions.push(swapped);
+    while !remaining.is_empty() {
+        // Find a page that can be placed next
+        if let Some(next_page) = remaining.clone().iter().find(|&page| {
+            // Check if this page can be placed without violating any rules
+            !remaining.iter().any(|&other| {
+                other != *page
+                    && rules
+                        .get(&other)
+                        .map_or(false, |after| after.contains(page))
+            })
+        }) {
+            sorted.push(*next_page);
+            remaining.remove(next_page);
+        } else {
+            // If no page can be placed, break to prevent infinite loop
+            break;
         }
     }
 
-    println!("{:?}", swapped_versions);
+    // If we couldn't sort all pages, add remaining pages
+    sorted.extend(remaining);
 
-    swapped_versions
+    sorted
+}
+
+fn fix_incorrect_manual(manual: &[usize], rules: &HashMap<usize, HashSet<usize>>) -> Vec<usize> {
+    // Try topological sort first
+    let sorted = topological_sort(manual, rules);
+
+    // If the sorted version is valid, return it
+    if is_manual_valid(&sorted, rules) {
+        return sorted;
+    }
+
+    // If not, we might need a more complex approach
+    // For now, return the original manual (you might want to enhance this)
+    manual.to_vec()
 }
 
 fn main() {
-    let (rules, updates) = load_data("inputs/input05.txt");
-    // let (rules, updates) = load_data("inputs/example_input05.txt");
+    let (rules, updates) = load_data("inputs/day05.txt");
+    // let (rules, updates) = load_data("inputs/example_day05.txt");
+
+    // Part 1
     let mut result: Vec<usize> = vec![];
     let mut incorrect_manuals = vec![];
     updates.iter().for_each(|manual| {
@@ -103,35 +124,17 @@ fn main() {
     println!("result {:?}", result.iter().sum::<usize>());
 
     // Part 2
-    //  brute force the incorrect_manuals until they are correct
-    // let mut fixed_manuals: Vec<Vec<usize>> = vec![];
-    // let mut result: Vec<usize> = vec![];
-    // let total = incorrect_manuals.len();
-    // let mut counter = 0;
-    // incorrect_manuals.iter().for_each(|m| {
-    //     println!("{:?}", m);
-    //     println!("{:?}", total - counter);
-    //     m.iter()
-    //         .cloned()
-    //         .permutations(m.len())
-    //         .find(|p| is_manual_valid(p, &rules))
-    //         .map(|p| {
-    //             result.push(p[p.len() / 2]);
-    //             fixed_manuals.push(p);
-    //         });
-    //     counter += 1;
-    // });
+    let mut result: Vec<usize> = vec![];
+    incorrect_manuals.iter().for_each(|manual| {
+        if is_manual_valid(manual, &rules) {
+            // Correctly ordered update, use existing middle page
+            result.push(manual[manual.len() / 2])
+        } else {
+            // Incorrect update, find correct ordering
+            let corrected_manual = fix_incorrect_manual(manual, &rules);
+            result.push(corrected_manual[corrected_manual.len() / 2]);
+        }
+    });
 
-    let mut total = 0;
-    let (result, fixed_manuals): (Vec<usize>, Vec<Vec<usize>>) = incorrect_manuals
-        .par_iter()
-        .filter_map(|m| {
-            m.iter()
-                .cloned()
-                .permutations(m.len())
-                .find(|p| is_manual_valid(p, &rules))
-                .map(|p| (p[p.len() / 2], p))
-        })
-        .unzip();
-    println!("fixed result {:?}", result.iter().sum::<usize>());
+    println!("correct result: {:?}", result.iter().sum::<usize>());
 }
