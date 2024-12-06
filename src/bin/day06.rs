@@ -155,7 +155,7 @@ impl Map {
     fn within_bounds(&self, x: i32, y: i32) -> bool {
         x >= 0 && y >= 0 && y < self.0.len() as i32 && x < self.0[y as usize].len() as i32
     }
-    fn find_loop_positions(&self) -> usize {
+    fn time_loop(&self) -> usize {
         //
         // Initialize simulation!
         //
@@ -171,6 +171,7 @@ impl Map {
         let mut loop_positions = 0;
         // Find the original guard
         let guard_start = self.find_guard();
+        let mut total_maps = 0;
         for y in 0..self.0.len() {
             for x in 0..self.0[y].len() {
                 // Skip the guard's starting position
@@ -188,8 +189,14 @@ impl Map {
                 if test_guard.is_stuck_in_loop(test_map) {
                     loop_positions += 1;
                 }
+
+                total_maps += 1;
             }
         }
+        println!(
+            "checked {:?} maps, {:?} guards are stuck",
+            total_maps, loop_positions
+        );
         loop_positions
     }
 }
@@ -203,6 +210,6 @@ fn main() {
     let visited_locs = guard.patrol(map.clone());
     println!("visited: {:?}", visited_locs);
 
-    let loop_positions = map.find_loop_positions();
+    let loop_positions = map.time_loop();
     println!("Positions that cause a loop: {}", loop_positions);
 }
