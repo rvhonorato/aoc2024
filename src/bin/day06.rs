@@ -1,6 +1,6 @@
 // https://adventofcode.com/2024/day/6
 use aoc2024::read_input_to_file;
-use std::{collections::HashSet, io::Read, thread, time::Duration};
+use std::{collections::HashSet, io::Read};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum Direction {
@@ -55,23 +55,18 @@ impl Guard {
                 Direction::Left => (self.x - 1, self.y),
             };
 
-            // if the guard is off the map terminate the patrol
+            // if the guard fell of the map terminate the patrol
             if !map.within_bounds(next_x, next_y) {
                 break;
             }
 
             if map.get_cell(next_x, next_y) == '#' {
-                // println!("turning right (in place)");
                 self.direction = self.direction.turn_right();
-                // self.walk();
-                // println!("{:?},{:?}", self.x, self.y);
             } else {
                 self.walk();
-                // println!("walked to - {:?},{:?}", self.x, self.y);
                 map.mark_visited(self.x, self.y);
                 visited.insert((self.x, self.y));
             };
-            // println!("{:?}", visited.len());
             // map.print_map();
             // println!("========================");
             // thread::sleep(Duration::from_secs_f64(0.05));
@@ -79,8 +74,7 @@ impl Guard {
         visited.len()
     }
 
-    fn is_stuck_in_loop(&mut self, mut map: Map) -> bool {
-        // let mut visited = HashSet::new();
+    fn is_stuck_in_loop(&mut self, map: Map) -> bool {
         let mut state_history = HashSet::new();
 
         while map.within_bounds(self.x, self.y) {
@@ -151,9 +145,9 @@ impl Map {
         self.0[y as usize][x as usize] = 'X'
     }
 
-    fn print_map(&self) {
-        self.0.iter().for_each(|x| println!("{:?}", x));
-    }
+    // fn print_map(&self) {
+    //     self.0.iter().for_each(|x| println!("{:?}", x));
+    // }
 
     fn get_cell(&self, x: i32, y: i32) -> char {
         self.0[y as usize][x as usize]
@@ -162,35 +156,40 @@ impl Map {
         x >= 0 && y >= 0 && y < self.0.len() as i32 && x < self.0[y as usize].len() as i32
     }
     fn find_loop_positions(&self) -> usize {
+        //
+        // Initialize simulation!
+        //
+        // Create multiple copies of the Map
+        //  Each copy will have an obstacle in a different position
+        //  Place a guard in it and let it run the variant map
+        //  If the get stuck, add one!
+        //
+        //  > NOTE: The guard will be stuck in the loop forever, but don't worry
+        //  > it was just a clone, the real guard is safe. Clones don't feel anything...
+        //  > hopefully
+        //
         let mut loop_positions = 0;
+        // Find the original guard
         let guard_start = self.find_guard();
-
         for y in 0..self.0.len() {
             for x in 0..self.0[y].len() {
                 // Skip the guard's starting position
-                if self.0[y][x] == '^' {
+                if self.0[y][x] == '^' || self.0[y][x] == '#' {
                     continue;
                 }
-
-                // Skip existing obstacles
-                if self.0[y][x] == '#' {
-                    continue;
-                }
-
                 // Create a copy of the map with a new obstacle
                 let mut test_map = self.clone();
                 test_map.0[y][x] = '#';
 
-                // Clone the guard to test the patrol
+                // Create a clone of the guard to run this map
                 let mut test_guard = guard_start.clone();
 
-                // Check if the guard gets stuck in a loop
+                // Observe if the clone is stuck
                 if test_guard.is_stuck_in_loop(test_map) {
                     loop_positions += 1;
                 }
             }
         }
-
         loop_positions
     }
 }
@@ -202,7 +201,6 @@ fn main() {
     let guard = map.find_guard();
 
     let visited_locs = guard.patrol(map.clone());
-
     println!("visited: {:?}", visited_locs);
 
     let loop_positions = map.find_loop_positions();
